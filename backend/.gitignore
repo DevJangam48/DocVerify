@@ -1,0 +1,9 @@
+# .gitignore
+*.env
+.env
+*.pem
+*.key
+*.json
+config/serviceAccountKey.json
+config/*.json
+
