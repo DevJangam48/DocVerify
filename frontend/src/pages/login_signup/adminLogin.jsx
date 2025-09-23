@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { auth } from "../../assets/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
 
-export default function AdminLogin({ setToken, switchToSignup }) {
+export default function AdminLogin({ setToken, setAdminID, switchToSignup }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault(); // Prevent form submission from reloading the page
@@ -19,10 +23,36 @@ export default function AdminLogin({ setToken, switchToSignup }) {
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, pass);
-      const token = await userCred.user.getIdToken();
+
+      // Wait a moment for the token to be properly generated
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const token = await userCred.user.getIdToken(true);
       setToken(token);
+      localStorage.setItem("token", token);
+
+      const adminId = userCred.user.uid;
+      setAdminID(adminId);
+      localStorage.setItem("adminId", adminId);
+
+      try {
+        const res = await api.get(`/admin/${adminId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.data && Object.keys(res.data).length > 0) {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/admin/register");
+        }
+      } catch (apiError) {
+        console.warn(
+          "Backend API not available, redirecting to admin registration page: ",
+          apiError.message
+        );
+      }
+      navigate("/admin/dashboard");
+
       console.log("Admin Auth Token:", token);
-      // The modal will likely close on success, so an alert isn't necessary.
     } catch (e) {
       // Provide a user-friendly error message
       setError("Invalid credentials. Please check your email and password.");

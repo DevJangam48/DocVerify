@@ -13,10 +13,13 @@ import AdminSignup from "./pages/login_signup/adminSignup";
 import LandingPage from "./pages/LandingPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import StudentRegistration from "./pages/StudentRegistration";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminRegistration from "./pages/AdminRegistration";
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [userID, setUserID] = useState(() => localStorage.getItem("userID"));
+  const [adminID, setAdminID] = useState(() => localStorage.getItem("adminID"));
 
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -46,7 +49,13 @@ function App() {
         <Route path="/admin/signup" element={<AdminSignup />} />
         <Route
           path="/admin/login"
-          element={<AdminLogin setToken={setToken} setIsAdmin={setIsAdmin} />}
+          element={
+            <AdminLogin
+              setToken={setToken}
+              setIsAdmin={setIsAdmin}
+              setAdminID={setAdminID}
+            />
+          }
         />
 
         <Route
@@ -59,6 +68,20 @@ function App() {
           element={
             <PrivateStudentRoute>
               <StudentDashboard token={token} userID={userID} />
+            </PrivateStudentRoute>
+          }
+        />
+
+        <Route
+          path="/admin/register"
+          element={<AdminRegistration token={token} userID={adminID} />}
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <PrivateStudentRoute>
+              <AdminDashboard token={token} userID={adminID} />
             </PrivateStudentRoute>
           }
         />
