@@ -22,7 +22,6 @@ exports.registerAdmin = async (req, res) => {
 exports.getAdmin = async (req, res) => {
   try {
     const { userID } = req.params;
-    console.log("✅ user Id: ", userID);
     const admin = await getAdminById(userID);
     if (!admin) return res.status(404).json({ error: "❌ Admin not found" });
     res.json(admin);

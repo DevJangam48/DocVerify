@@ -8,7 +8,7 @@ import {
 
 import Signup from "./pages/login_signup/Signup";
 import Login from "./pages/login_signup/Login";
-import AdminLogin from "./pages/login_signup/adminLogin";
+import AdminLogin from "./pages/login_signup/AdminLogin";
 import AdminSignup from "./pages/login_signup/adminSignup";
 import LandingPage from "./pages/LandingPage";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -38,7 +38,13 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<LandingPage setToken={setToken} setUserID={setUserID} />}
+          element={
+            <LandingPage
+              setToken={setToken}
+              setUserID={setUserID}
+              setAdminID={setAdminID}
+            />
+          }
         />
         <Route path="/signup" element={<Signup />} />
         <Route
@@ -52,8 +58,8 @@ function App() {
           element={
             <AdminLogin
               setToken={setToken}
-              setIsAdmin={setIsAdmin}
               setAdminID={setAdminID}
+              setIsAdmin={setIsAdmin}
             />
           }
         />
@@ -81,7 +87,7 @@ function App() {
           path="/admin/dashboard"
           element={
             <PrivateStudentRoute>
-              <AdminDashboard token={token} userID={adminID} />
+              <AdminDashboard token={token} adminID={adminID} />
             </PrivateStudentRoute>
           }
         />

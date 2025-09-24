@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import Login from "./login_signup/Login";
 import Signup from "./login_signup/Signup";
-import AdminLogin from "./login_signup/adminLogin";
+import AdminLogin from "./login_signup/AdminLogin";
 import AdminSignup from "./login_signup/adminSignup";
 
-export default function LandingPage({ setToken, setUserID }) {
+export default function LandingPage({ setToken, setUserID, setAdminID }) {
   const [modalType, setModalType] = useState(null);
 
   const openStudentLogin = () => setModalType("studentLogin");
@@ -349,7 +349,7 @@ export default function LandingPage({ setToken, setUserID }) {
                 {modalType === "adminLogin" && (
                   <AdminLogin
                     setToken={setToken}
-                    setUserID={setUserID}
+                    setAdminID={setAdminID}
                     switchToSignup={openAdminSignup}
                   />
                 )}

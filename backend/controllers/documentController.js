@@ -58,7 +58,6 @@ exports.getDocumentsByCollege = async (req, res) => {
   try {
     // Assuming req.user.collegeId is set by authentication middleware or controller logic
     const collegeId = req.user.collegeId;
-    console.log("✅ College ID: ", collegeId);
     if (!collegeId)
       return res
         .status(403)
@@ -77,7 +76,6 @@ exports.getDocumentsByUser = async (req, res) => {
   try {
     const userId = req.user.uid; // Extract user ID from authorized request
     if (!userId) return res.status(400).json({ error: "User ID is required" });
-    //console.log("✅ User ID: ", userId);
     const documents = await getDocumentsByUserId(userId);
 
     // Inject pre-signed URLs for each document

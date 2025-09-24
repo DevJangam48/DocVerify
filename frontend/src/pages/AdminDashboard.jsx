@@ -98,7 +98,7 @@ export default function AdminDashboard({ token, adminID }) {
         setProfile(res.data);
         // Then fetch all college documents:
         api
-          .get(`/documents/college/${res.data.collegeId}`, {
+          .get(`/documents/college`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           .then((docRes) => setDocuments(docRes.data));

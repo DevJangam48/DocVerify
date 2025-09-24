@@ -33,7 +33,7 @@ export default function AdminLogin({ setToken, setAdminID, switchToSignup }) {
 
       const adminId = userCred.user.uid;
       setAdminID(adminId);
-      localStorage.setItem("adminId", adminId);
+      localStorage.setItem("adminID", adminId);
 
       try {
         const res = await api.get(`/admin/${adminId}`, {
