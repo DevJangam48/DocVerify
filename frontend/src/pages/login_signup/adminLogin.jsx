@@ -36,7 +36,7 @@ export default function AdminLogin({ setToken, setAdminID, switchToSignup }) {
       localStorage.setItem("adminID", adminId);
 
       try {
-        const res = await api.get(`/admin/${adminId}`, {
+        const res = await api.get(`/admins/${adminId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && Object.keys(res.data).length > 0) {

@@ -15,6 +15,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import StudentRegistration from "./pages/StudentRegistration";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRegistration from "./pages/AdminRegistration";
+import AdminStudentDetails from "./pages/AdminStudentDetails";
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
@@ -90,6 +91,11 @@ function App() {
               <AdminDashboard token={token} adminID={adminID} />
             </PrivateStudentRoute>
           }
+        />
+
+        <Route
+          path="/admin/student/:studentId"
+          element={<AdminStudentDetails token={token} adminID={adminID} />}
         />
         {/* Add admin routes here if needed */}
       </Routes>

@@ -1,6 +1,9 @@
 const { createAdmin, getAdminById } = require("../models/adminModel");
-const { getStudentsByCollegeId } = require("../models/studentModel");
-const { getDocumentsByUserId } = require("../models/documentModel");
+const { getStudentById } = require("../models/studentModel");
+const {
+  getDocumentsByUserId,
+  getDocumentsByCollegeId,
+} = require("../models/documentModel");
 
 exports.registerAdmin = async (req, res) => {
   try {
@@ -30,18 +33,45 @@ exports.getAdmin = async (req, res) => {
     res.status(500).json({ error: "❌ Failed to get admin" });
   }
 };
-// Get all students by college for admin
+
 exports.getStudentsForCollege = async (req, res) => {
   try {
     const collegeId = req.user.collegeId; // from verifyAdmin middleware
     if (!collegeId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
-    const students = await getStudentsByCollegeId(collegeId);
-    res.json(students);
+
+    // Fetch all documents for the college
+    const documents = await getDocumentsByCollegeId(collegeId);
+
+    // Group documents by studentId and count documents
+    const studentMap = documents.reduce((acc, doc) => {
+      const studentId = doc.userId || doc.uploaderPRN;
+      if (studentId) {
+        if (!acc[studentId]) acc[studentId] = { studentId, documentCount: 0 };
+        acc[studentId].documentCount++;
+      }
+      return acc;
+    }, {});
+
+    // For each student, fetch the details and map to desired output
+    const studentList = await Promise.all(
+      Object.keys(studentMap).map(async (studentId) => {
+        const studentDetails = await getStudentById(studentId);
+        return {
+          name: studentDetails?.name || "Unknown",
+          email: studentDetails?.email || "Unknown",
+          prnNo: studentDetails?.prnNo || "Unknown",
+          documentCount: studentMap[studentId].documentCount,
+        };
+      })
+    );
+
+    // Return student list with name, email, prnNo, and document count
+    res.json(studentList);
   } catch (error) {
-    console.error("Error fetching students:", error);
-    res.status(500).json({ error: "Failed to fetch students" });
+    console.error("Error fetching students preview:", error);
+    res.status(500).json({ error: "Failed to fetch students preview" });
   }
 };
 
@@ -55,5 +85,19 @@ exports.getDocumentsOfStudent = async (req, res) => {
   } catch (error) {
     console.error("Error fetching student documents:", error);
     res.status(500).json({ error: "Failed to fetch documents" });
+  }
+};
+
+exports.getStudentByIdController = async (req, res) => {
+  try {
+    const { userID } = req.params;
+    const student = await getStudentById(userID);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+    res.json(student);
+  } catch (error) {
+    console.error("Error fetching student:", error);
+    res.status(500).json({ error: "Error fetching student details" });
   }
 };

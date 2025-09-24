@@ -5,18 +5,28 @@ const {
   getAdmin,
   getStudentsForCollege,
   getDocumentsOfStudent,
+  getStudentByIdController,
 } = require("../controllers/adminController");
 const { verifyFirebaseToken } = require("../middleware/authMiddleware");
 const { verifyAdmin } = require("../middleware/authMiddleware");
 
 router.post("/", verifyFirebaseToken, verifyAdmin, registerAdmin);
 router.get(
-  "/students",
+  "/students/",
   verifyFirebaseToken,
   verifyAdmin,
   getStudentsForCollege
 );
+
+router.get(
+  "/student/:userID",
+  verifyFirebaseToken,
+  verifyAdmin,
+  getStudentByIdController
+);
+
 router.get("/:userID", verifyFirebaseToken, verifyAdmin, getAdmin);
+
 router.get(
   "/:userId/documents",
   verifyFirebaseToken,
