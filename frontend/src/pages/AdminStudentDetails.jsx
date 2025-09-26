@@ -90,7 +90,7 @@ export default function AdminStudentDetails({ token }) {
     setLoading(true);
 
     Promise.all([
-      api.get(`/students/${studentId}`, {
+      api.get(`/admins/student/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
       api.get(`/admins/${studentId}/documents`, {

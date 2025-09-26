@@ -12,7 +12,7 @@ const { verifyAdmin } = require("../middleware/authMiddleware");
 
 router.post("/", verifyFirebaseToken, verifyAdmin, registerAdmin);
 router.get(
-  "/students/",
+  "/students",
   verifyFirebaseToken,
   verifyAdmin,
   getStudentsForCollege
