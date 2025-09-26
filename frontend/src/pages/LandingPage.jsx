@@ -66,7 +66,7 @@ export default function LandingPage({ setToken, setUserID, setAdminID }) {
             </button>
             <button
               onClick={openAdminLogin}
-              className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:bg-indigo-700 transition-all duration-200 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:bg-indigo-700 transition-all duration-200 hover:shadow-lg focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Admin Login
             </button>
