@@ -48,7 +48,7 @@ exports.getStudentsForCollege = async (req, res) => {
     const studentMap = documents.reduce((acc, doc) => {
       const studentId = doc.userId || doc.uploaderPRN;
       if (studentId) {
-        if (!acc[studentId]) acc[studentId] = { studentId, documentCount: 0 };
+        if (!acc[studentId]) acc[studentId] = { studentId, documentCount: 1 };
         acc[studentId].documentCount++;
       }
       return acc;
@@ -59,9 +59,10 @@ exports.getStudentsForCollege = async (req, res) => {
       Object.keys(studentMap).map(async (studentId) => {
         const studentDetails = await getStudentById(studentId);
         return {
+          userID: studentId,
           name: studentDetails?.name || "Unknown",
           email: studentDetails?.email || "Unknown",
-          prnNo: studentDetails?.prnNo || "Unknown",
+          prnNo: studentDetails?.prn || "Unknown",
           documentCount: studentMap[studentId].documentCount,
         };
       })

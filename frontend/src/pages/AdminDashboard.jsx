@@ -1,111 +1,92 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
-const Icon = ({ type }) => {
-  const icons = {
-    pdf: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6 text-red-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-    ),
-    image: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6 text-sky-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-    default: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6 text-slate-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0011.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  };
-  const ext = type.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png", "gif"].includes(ext)) return icons.image;
-  if (ext === "pdf") return icons.pdf;
-  return icons.default;
-};
+// --- HELPER COMPONENTS (for better structure) ---
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-    verified: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800",
-    pending: "bg-yellow-100 text-yellow-800",
-  };
-  return (
-    <span
-      className={`px-3 py-1 text-xs font-medium rounded-full ${
-        styles[status] || styles.pending
-      }`}
-    >
-      {status}
-    </span>
-  );
-};
+// Search Icon SVG
+const SearchIcon = () => (
+  <svg
+    className="w-5 h-5 text-gray-400"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+);
+
+// Logout Icon SVG
+const LogoutIcon = () => (
+  <svg
+    className="w-5 h-5 mr-2"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+    />
+  </svg>
+);
+
+// Skeleton Loader for a better UX while fetching data
+const StudentListSkeleton = () => (
+  <div className="space-y-4">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="bg-white p-4 rounded-lg shadow-sm animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    ))}
+  </div>
+);
+
+// --- MAIN COMPONENT ---
 
 export default function AdminDashboard({ token, adminID }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [students, setStudents] = useState([]);
-  const [feedback, setFeedback] = useState({ message: "", type: "" });
-  const [actionLoading, setActionLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const showFeedback = (message, type) => {
-    setFeedback({ message, type });
-    setTimeout(() => setFeedback({ message: "", type: "" }), 4000);
-  };
-
   useEffect(() => {
-    if (!token || !adminID) return;
-    api
-      .get(`/admins/${adminID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setProfile(res.data);
-        return api.get(`/admins/students`, {
+    if (!token || !adminID) {
+      setLoading(false);
+      return;
+    }
+    const fetchData = async () => {
+      try {
+        const profileRes = await api.get(`/admins/${adminID}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-      })
-      .then((res) => setStudents(res.data))
-      .catch(() => {
-        setProfile(null);
-        setStudents([]);
-      });
+        setProfile(profileRes.data);
+
+        const studentsRes = await api.get(`/admins/students`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStudents(studentsRes.data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        // Handle error appropriately, maybe navigate to login
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, [token, adminID]);
 
   const filteredStudents = students.filter((student) => {
@@ -131,63 +112,104 @@ export default function AdminDashboard({ token, adminID }) {
     navigate(`/admin/student/${userID}`);
   };
 
-  if (!profile)
+  if (loading) {
     return (
-      <div className="p-12 text-lg text-indigo-700">Loading Dashboard...</div>
+      <div className="bg-gray-50 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-10 animate-pulse"></div>
+          <StudentListSkeleton />
+        </div>
+      </div>
     );
+  }
 
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex justify-between items-center">
+    <div className="bg-gray-50 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* -- Header -- */}
+        <header className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Welcome, {profile.name.split(" ")[0]} (Admin)!
+            <h1 className="text-3xl font-bold text-gray-800">
+              Welcome, {profile?.name.split(" ")[0]}!
             </h1>
-            <p className="text-slate-500">College: {profile.collegeName}</p>
+            <p className="text-md text-gray-500 mt-1">{profile?.collegeName}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition shadow"
+            className="flex items-center px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors duration-200 shadow-sm"
           >
+            <LogoutIcon />
             Logout
           </button>
-        </div>
+        </header>
 
-        <input
-          type="text"
-          className="border border-gray-300 rounded p-2 w-full mb-4"
-          placeholder="Search students by name, email, or PRN..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        {filteredStudents.length === 0 ? (
-          <p className="text-center text-slate-500 py-10">
-            No students available for verification.
+        {/* -- Search & Content Area -- */}
+        <main className="bg-white p-6 md:p-8 rounded-xl shadow-md">
+          <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+            Student Verification Queue
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Select a student to view and verify their documents.
           </p>
-        ) : (
+
+          <div className="relative mb-6">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <SearchIcon />
+            </span>
+            <input
+              type="text"
+              className="border border-gray-300 rounded-lg p-3 pl-10 w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+              placeholder="Search students by name, email, or PRN..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* -- Student List -- */}
           <div className="space-y-4">
-            {filteredStudents.map(
-              ({ userID, name, email, prnNo, documentCount }) => (
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student) => (
                 <div
-                  key={userID}
-                  className="cursor-pointer rounded-md p-4 bg-white shadow-md hover:bg-gray-50"
-                  onClick={() => openStudentDetails(userID)}
+                  key={student.userID}
+                  className="grid grid-cols-2 md:grid-cols-4 items-center gap-4 p-4 rounded-lg border border-transparent hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 cursor-pointer"
+                  onClick={() => openStudentDetails(student.userID)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800">
-                    {name}
-                  </h2>
-                  <p className="text-sm text-slate-500">Email: {email}</p>
-                  <p className="text-sm text-slate-500">PRN No: {prnNo}</p>
-                  <p className="text-sm text-slate-500">
-                    {documentCount} document(s) uploaded
-                  </p>
+                  {/* Student Info */}
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="font-semibold text-gray-800">
+                      {student.name}
+                    </p>
+                    <p className="text-sm text-gray-500">{student.email}</p>
+                  </div>
+
+                  {/* PRN */}
+                  <div className="text-gray-600">
+                    <span className="md:hidden font-medium text-xs">PRN: </span>
+                    {student.prnNo}
+                  </div>
+
+                  {/* Document Count */}
+                  <div className="text-gray-600">
+                    <span className="font-bold">{student.documentCount}</span>{" "}
+                    document(s)
+                  </div>
+
+                  {/* Status */}
+                  <div className="text-right">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800">
+                      Pending Review
+                    </span>
+                  </div>
                 </div>
-              )
+              ))
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-gray-500">No students found.</p>
+              </div>
             )}
           </div>
-        )}
+        </main>
       </div>
     </div>
   );
