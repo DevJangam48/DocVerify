@@ -58,9 +58,45 @@ const getDocumentsByUserId = async (userId) => {
   return itemsWithUrl;
 };
 
+// Update a document by its unique document_id
+const updateDocumentById = async (documentId, updateData) => {
+  const updateExpression = [];
+  const expressionAttributeValues = {};
+  const expressionAttributeNames = {};
+
+  for (const key in updateData) {
+    updateExpression.push(`#${key} = :${key}`);
+    expressionAttributeValues[`:${key}`] = updateData[key];
+    expressionAttributeNames[`#${key}`] = key;
+  }
+
+  const params = {
+    TableName: TABLE_NAME,
+    Key: { document_id: documentId },
+    UpdateExpression: "SET " + updateExpression.join(", "),
+    ExpressionAttributeValues: expressionAttributeValues,
+    ExpressionAttributeNames: expressionAttributeNames,
+    ReturnValues: "ALL_NEW",
+  };
+
+  const result = await dynamoDb.update(params).promise();
+  return result.Attributes;
+};
+
+// Delete a document by its unique document_id
+const deleteDocumentById = async (documentId) => {
+  const params = {
+    TableName: TABLE_NAME,
+    Key: { document_id: documentId },
+  };
+  return dynamoDb.delete(params).promise();
+};
+
 module.exports = {
   createDocument,
   getDocumentById,
   getDocumentsByCollegeId,
   getDocumentsByUserId,
+  updateDocumentById,
+  deleteDocumentById,
 };

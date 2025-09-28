@@ -140,6 +140,38 @@ export default function StudentDashboard({ token, userID }) {
     setUploading(false);
   };
 
+  const handleUpdateStatus = async (documentId) => {
+    try {
+      // For simplicity, let's toggle status between 'pending' and 'verified' here
+      const doc = documents.find((d) => d.document_id === documentId);
+      const newStatus = doc.status === "pending" ? "verified" : "pending";
+
+      await api.put(
+        `/documents/${documentId}`,
+        { status: newStatus },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      showFeedback("Document status updated", "success");
+      fetchDocuments(); // Refresh list
+    } catch {
+      showFeedback("Failed to update document", "error");
+    }
+  };
+
+  const handleDeleteDocument = async (documentId) => {
+    try {
+      await api.delete(`/documents/${documentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showFeedback("Document deleted", "success");
+      fetchDocuments(); // Refresh list
+    } catch {
+      showFeedback("Failed to delete document", "error");
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userID");
@@ -267,15 +299,94 @@ export default function StudentDashboard({ token, userID }) {
                         <td className="py-3 px-4 capitalize">
                           <StatusBadge status={doc.status} />
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 flex items-center gap-4">
+                          {/* View Icon */}
                           <a
                             href={doc.s3Url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-semibold text-indigo-600 hover:text-indigo-800"
+                            className="text-indigo-600 hover:text-indigo-800 relative group"
+                            title="View Document"
                           >
-                            View
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-6 w-6"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            {/* Tooltip */}
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 rounded bg-gray-800 px-2 py-1 text-xs text-white transition-all group-hover:scale-100 pointer-events-none whitespace-nowrap">
+                              View
+                            </span>
                           </a>
+
+                          {/* Update Icon */}
+                          <button
+                            onClick={() => handleUpdateStatus(doc.document_id)}
+                            className="text-green-600 hover:text-green-800 relative group"
+                            title="Update Document"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-6 w-6"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 7.5-7.5z"
+                              />
+                            </svg>
+                            {/* Tooltip */}
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 rounded bg-gray-800 px-2 py-1 text-xs text-white transition-all group-hover:scale-100 pointer-events-none whitespace-nowrap">
+                              Update
+                            </span>
+                          </button>
+
+                          {/* Delete Icon */}
+                          <button
+                            onClick={() =>
+                              handleDeleteDocument(doc.document_id)
+                            }
+                            className="text-red-600 hover:text-red-800 relative group"
+                            title="Delete Document"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-6 w-6"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                            {/* Tooltip */}
+                            <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 rounded bg-gray-800 px-2 py-1 text-xs text-white transition-all group-hover:scale-100 pointer-events-none whitespace-nowrap">
+                              Delete
+                            </span>
+                          </button>
                         </td>
                       </tr>
                     ))}
