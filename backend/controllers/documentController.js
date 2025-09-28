@@ -122,36 +122,10 @@ exports.getDocumentById = async (req, res) => {
   }
 };
 
-exports.updateDocument = async (req, res) => {
-  try {
-    const documentId = req.params.documentId;
-    const updateData = req.body;
-
-    // Optionally, verify if the document exists first
-    const existingDoc = await getDocumentById(documentId);
-    if (!existingDoc) {
-      return res.status(404).json({ message: "Document not found" });
-    }
-
-    const updatedDocument = await updateDocumentById(documentId, updateData);
-    res
-      .status(200)
-      .json({
-        message: "Document updated successfully",
-        document: updatedDocument,
-      });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update document", error: error.message });
-  }
-};
-
 // Delete a document controller
 exports.deleteDocument = async (req, res) => {
   try {
     const documentId = req.params.documentId;
-
     // Optionally check if the document exists before deleting
     const existingDoc = await getDocumentById(documentId);
     if (!existingDoc) {
