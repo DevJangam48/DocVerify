@@ -10,6 +10,7 @@ const { getPresignedUrl } = require("../utils/awsS3Helper");
 const { s3 } = require("../config/aws");
 const { v4: uuidv4 } = require("uuid");
 const multer = require("multer");
+const { getStudentById } = require("../models/studentModel");
 const BUCKET_NAME = process.env.S3_BUCKET_NAME;
 const upload = multer();
 
@@ -20,6 +21,15 @@ exports.uploadDocument = [
     try {
       const file = req.file;
       if (!file) return res.status(400).json({ message: "No file uploaded" });
+
+      const userId = req.user.uid;
+      const studentProfile = await getStudentById(userId);
+      if (!studentProfile || !studentProfile.collegeId) {
+        return res
+          .status(400)
+          .json({ message: "Could not find college for this student." });
+      }
+      const collegeId = studentProfile.collegeId;
 
       const documentId = uuidv4();
       const fileKey = `students/${req.user.uid}/${documentId}_${file.originalname}`;
@@ -35,8 +45,8 @@ exports.uploadDocument = [
 
       await createDocument({
         document_id: documentId,
-        userId: req.user.uid,
-        collegeId: req.body.collegeId,
+        userId: userId,
+        collegeId: collegeId,
         s3Key: fileKey,
         s3Url: s3Result.Location,
         status: "pending",
@@ -122,19 +132,37 @@ exports.getDocumentById = async (req, res) => {
   }
 };
 
+// A new helper function for S3 deletion
+const deleteS3Object = (key) => {
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: key,
+  };
+  return s3.deleteObject(params).promise();
+};
+
 // Delete a document controller
 exports.deleteDocument = async (req, res) => {
   try {
-    const documentId = req.params.documentId;
-    // Optionally check if the document exists before deleting
+    const { documentId } = req.params;
+
+    // 1. Get the document details, including the s3Key
     const existingDoc = await getDocumentById(documentId);
     if (!existingDoc) {
       return res.status(404).json({ message: "Document not found" });
     }
 
+    // 2. Delete the file from S3
+    if (existingDoc.s3Key) {
+      await deleteS3Object(existingDoc.s3Key);
+    }
+
+    // 3. Delete the record from DynamoDB
     await deleteDocumentById(documentId);
+
     res.status(200).json({ message: "Document deleted successfully" });
   } catch (error) {
+    console.error("❌ Error deleting document: ", error);
     res
       .status(500)
       .json({ message: "Failed to delete document", error: error.message });

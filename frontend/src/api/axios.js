@@ -7,16 +7,37 @@ const api = axios.create({
   timeout: 20000, // 10 seconds timeout
 });
 
-// Optional: Add an interceptor so auth tokens are automatically attached to requests
+// Add an interceptor so auth tokens are automatically attached to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token"); // Or get it from a state/context if storing elsewhere
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
+    console.log("API Request:", config.method.toUpperCase(), config.url);
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("Request interceptor error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log("API Response:", response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error(
+      "API Error:",
+      error.response?.status,
+      error.response?.data,
+      error.config?.url
+    );
+    return Promise.reject(error);
+  }
 );
 
 export default api;

@@ -10,6 +10,15 @@ const documentRoutes = require("./routes/documentRoutes");
 app.use(cors());
 app.use(express.json());
 
+// Test endpoint
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "OK",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use("/api/students", studentRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/documents", documentRoutes);
