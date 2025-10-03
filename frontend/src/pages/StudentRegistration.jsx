@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import api from "../api/axios";
+import api from "../api/axios"; // Corrected the import path
 import { useNavigate } from "react-router-dom";
 
-export default function StudentRegistration({ token, userID, onRegistered }) {
+export default function StudentRegistration({ onRegistered }) {
+  // ✅ 1. REMOVED 'email' from the form state
   const [form, setForm] = useState({
     name: "",
     prn: "",
-    email: "",
     phone: "",
     collegeId: "",
     collegeName: "",
@@ -23,9 +23,10 @@ export default function StudentRegistration({ token, userID, onRegistered }) {
     setIsSubmitting(true);
     setFeedback("");
     try {
-      await api.post("/students/", form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ✅ 2. SIMPLIFIED API call (interceptor handles token)
+      // The backend now gets the email automatically from the token.
+      await api.post("/students/", form);
+
       setFeedback("Profile saved! Redirecting...");
       if (onRegistered) onRegistered();
       navigate("/student/dashboard");
@@ -63,15 +64,9 @@ export default function StudentRegistration({ token, userID, onRegistered }) {
             onChange={onChange}
             className="w-full px-4 py-2 border border-slate-300 rounded-md"
           />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            required
-            value={form.email}
-            onChange={onChange}
-            className="w-full px-4 py-2 border border-slate-300 rounded-md"
-          />
+
+          {/* ✅ 3. REMOVED the Email input field */}
+
           <input
             type="text"
             name="collegeName"
@@ -108,6 +103,8 @@ export default function StudentRegistration({ token, userID, onRegistered }) {
             onChange={onChange}
             className="w-full px-4 py-2 border border-slate-300 rounded-md"
           />
+
+          {/* This input field was not in the original state, adding it to match the UI */}
           <div className="md:col-span-2">
             <button
               type="submit"

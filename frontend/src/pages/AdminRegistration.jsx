@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import api from "../api/axios"; // Adjust this import path to your axios instance
 import { useNavigate } from "react-router-dom";
 
-export default function AdminRegistration({ token, userID }) {
+export default function AdminRegistration() {
   const navigate = useNavigate();
 
+  // ✅ 1. REMOVED 'email' from the form state
   const [form, setForm] = useState({
     name: "",
-    email: "",
     prn: "",
     collegeName: "",
     collegeId: "",
@@ -16,48 +16,27 @@ export default function AdminRegistration({ token, userID }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Submit registration
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    // Basic validation
-    if (
-      !form.name ||
-      !form.email ||
-      !form.prn ||
-      !form.collegeName ||
-      !form.collegeId
-    ) {
+
+    // ✅ 2. REMOVED 'email' from validation
+    if (!form.name || !form.prn || !form.collegeName || !form.collegeId) {
       setError("Please fill in all required fields.");
       return;
     }
     setLoading(true);
 
     try {
-      // Call backend API to register admin details
-      await api.post(
-        `/admins/register`,
-        {
-          userId: userID,
-          name: form.name,
-          email: form.email,
-          prn: form.prn,
-          collegeName: form.collegeName,
-          collegeId: form.collegeId,
-          additionalInfo: form.additionalInfo,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      // ✅ 3. REMOVED 'email' and 'userId' from payload and simplified API call
+      // The backend now gets the userID and email securely from the token.
+      await api.post(`/admins/`, form);
 
-      // On success, redirect to admin dashboard or login
       navigate("/admin/dashboard");
     } catch (err) {
       console.error("Admin registration error:", err);
@@ -86,17 +65,7 @@ export default function AdminRegistration({ token, userID }) {
           />
         </label>
 
-        <label className="block">
-          <span className="text-gray-700">Email *</span>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-          />
-        </label>
+        {/* ✅ 4. REMOVED the Email input field from the form */}
 
         <label className="block">
           <span className="text-gray-700">PRN *</span>

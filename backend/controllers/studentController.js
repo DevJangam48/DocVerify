@@ -2,14 +2,23 @@ const { createStudent, getStudentById } = require("../models/studentModel");
 
 exports.registerStudent = async (req, res) => {
   try {
-    const data = req.body;
-    // Add validation here as needed
+    // Get UID and email securely from the decoded token
+    const userId = req.user.uid;
+    const email = req.user.email; // Get other details from the form body
 
-    await createStudent({
-      ...data,
-      userID: data.userID,
+    const { name, prn, collegeName, collegeId } = req.body; // Construct the data payload securely
+
+    const studentProfile = {
+      userID: userId,
+      email: email,
+      name,
+      prn,
+      collegeName,
+      collegeId,
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    await createStudent(studentProfile);
 
     res.status(201).json({ message: "✅ Student registered successfully" });
   } catch (error) {

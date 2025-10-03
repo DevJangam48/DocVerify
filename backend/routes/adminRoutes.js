@@ -7,6 +7,7 @@ const {
   getDocumentsOfStudent,
   getStudentByIdController,
   adminUpdateDocumentStatus,
+  sendStudentStatusEmail,
 } = require("../controllers/adminController");
 const { verifyFirebaseToken } = require("../middleware/authMiddleware");
 const { verifyAdmin } = require("../middleware/authMiddleware");
@@ -40,6 +41,13 @@ router.put(
   verifyFirebaseToken,
   verifyAdmin,
   adminUpdateDocumentStatus
+);
+
+router.post(
+  "/student/:studentId/send-status-email",
+  verifyFirebaseToken,
+  verifyAdmin,
+  sendStudentStatusEmail
 );
 
 module.exports = router;

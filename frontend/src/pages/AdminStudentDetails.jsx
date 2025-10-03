@@ -21,7 +21,6 @@ const BackIcon = () => (
 );
 
 const Icon = ({ type }) => {
-  // ... (Icon component code remains the same)
   const icons = {
     pdf: (
       <svg
@@ -79,7 +78,6 @@ const Icon = ({ type }) => {
 };
 
 const StatusBadge = ({ status }) => {
-  // ... (StatusBadge component code remains the same)
   const styles = {
     verified: "bg-green-100 text-green-800",
     rejected: "bg-red-100 text-red-800",
@@ -98,20 +96,14 @@ const StatusBadge = ({ status }) => {
 
 // --- MODAL COMPONENT ---
 const ActionModal = ({ doc, action, onClose, onConfirm }) => {
-  // ... (ActionModal component code remains the same)
   if (!doc) return null;
-
   const [remarks, setRemarks] = useState("");
   const isReject = action === "rejected";
   const title = isReject ? "Reject Document" : "Approve Document";
   const buttonClass = isReject
     ? "bg-red-600 hover:bg-red-700"
     : "bg-green-600 hover:bg-green-700";
-
-  const handleConfirm = () => {
-    onConfirm(doc.document_id, action, remarks);
-  };
-
+  const handleConfirm = () => onConfirm(doc.document_id, action, remarks);
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
@@ -168,32 +160,29 @@ const DetailsSkeleton = () => (
 export default function AdminStudentDetails({ token }) {
   const { studentId } = useParams();
   const navigate = useNavigate();
-
   const [student, setStudent] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [modalState, setModalState] = useState({
     isOpen: false,
     doc: null,
     action: "",
   });
 
+  // ✅ 1. ADD STATE FOR EMAIL BUTTON
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
   useEffect(() => {
     const fetchDetails = () => {
-      if (!token || !studentId) {
+      if (!studentId) {
         setLoading(false);
         return;
       }
       setLoading(true);
       Promise.all([
-        api.get(`/admins/student/${studentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        api.get(`/admins/${studentId}/documents`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        api.get(`/admins/student/${studentId}`),
+        api.get(`/admins/${studentId}/documents`),
       ])
         .then(([studentRes, docsRes]) => {
           setStudent(studentRes.data);
@@ -207,7 +196,7 @@ export default function AdminStudentDetails({ token }) {
         .finally(() => setLoading(false));
     };
     fetchDetails();
-  }, [token, studentId]);
+  }, [studentId]);
 
   const handleActionClick = (doc, action) =>
     setModalState({ isOpen: true, doc, action });
@@ -216,27 +205,39 @@ export default function AdminStudentDetails({ token }) {
 
   const handleConfirmAction = async (documentId, status, remark) => {
     try {
-      // Call the backend endpoint to update the status
       await api.put(`/admins/documents/${documentId}/status`, {
         status,
         remark,
       });
-
-      // If the API call is successful, then update the local state
       setDocuments((prevDocs) =>
         prevDocs.map((doc) =>
-          doc.document_id === documentId
-            ? { ...doc, status: status, remark: remark } // Also update remark if you want to display it
-            : doc
+          doc.document_id === documentId ? { ...doc, status, remark } : doc
         )
       );
     } catch (err) {
       console.error("Failed to update document status:", err);
-      // Optionally, show an error message to the admin
       setError("Failed to save status change. Please try again.");
     } finally {
-      // Close the modal regardless of success or failure
       handleModalClose();
+    }
+  };
+
+  // ✅ 2. ADD THE HANDLER FUNCTION FOR SENDING THE EMAIL
+  const handleSendEmail = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to send a status update email to ${student.name}?`
+    );
+    if (!confirmed) return;
+
+    setIsSendingEmail(true);
+    try {
+      await api.post(`/admins/student/${studentId}/send-status-email`);
+      alert("Status email sent successfully!");
+    } catch (err) {
+      console.error("Failed to send email:", err);
+      alert("Failed to send email. Please try again.");
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -260,124 +261,141 @@ export default function AdminStudentDetails({ token }) {
         onClose={handleModalClose}
         onConfirm={handleConfirmAction}
       />
-      <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center mb-6 text-sm text-gray-700 font-semibold hover:text-indigo-600 transition"
-        >
-          <BackIcon />
-          Back to Dashboard
-        </button>
+      {student && (
+        <div className="max-w-7xl mx-auto">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center mb-6 text-sm text-gray-700 font-semibold hover:text-indigo-600 transition"
+          >
+            <BackIcon /> Back to Dashboard
+          </button>
 
-        {/* --- Compact Student Profile Header --- */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">{student.name}</h1>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2 text-gray-500">
-            <span>{student.email}</span>
-            <span className="hidden sm:inline">|</span>
-            <span>
-              PRN:{" "}
-              <span className="font-medium text-gray-600">{student.prn}</span>
-            </span>
-            <span className="hidden sm:inline">|</span>
-            <span>{student.collegeName}</span>
-          </div>
-        </header>
+          <header className="mb-8">
+            {/* ✅ 3. ADD THE BUTTON TO THE HEADER */}
+            <div className="flex justify-between items-start flex-wrap gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  {student.name}
+                </h1>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2 text-gray-500">
+                  <span>{student.email}</span>
+                  <span className="hidden sm:inline">|</span>
+                  <span>
+                    PRN:{" "}
+                    <span className="font-medium text-gray-600">
+                      {student.prn}
+                    </span>
+                  </span>
+                  <span className="hidden sm:inline">|</span>
+                  <span>{student.collegeName}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleSendEmail}
+                disabled={isSendingEmail}
+                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-sm hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-wait"
+              >
+                {isSendingEmail ? "Sending..." : "Send Status Email"}
+              </button>
+            </div>
+          </header>
 
-        {/* --- Responsive Documents Table --- */}
-        <main className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-700">
-              Uploaded Documents
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600 uppercase">
-                <tr>
-                  <th scope="col" className="px-6 py-3">
-                    File Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 hidden md:table-cell">
-                    Uploaded Date
-                  </th>
-                  <th scope="col" className="px-6 py-3">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.length > 0 ? (
-                  documents.map((doc) => (
-                    <tr
-                      key={doc.document_id}
-                      className="border-b last:border-0 hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0">
-                            <Icon type={doc.s3Key} />
+          <main className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-700">
+                Uploaded Documents
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600 uppercase">
+                  <tr>
+                    <th scope="col" className="px-6 py-3">
+                      File Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 hidden md:table-cell">
+                      Uploaded Date
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.length > 0 ? (
+                    documents.map((doc) => (
+                      <tr
+                        key={doc.document_id}
+                        className="border-b last:border-0 hover:bg-gray-50"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                              <Icon type={doc.s3Key} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800 break-all">
+                                {doc.s3Key.split("/").pop()}
+                              </p>
+                              <p className="text-gray-500 md:hidden">
+                                {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-800 break-all">
-                              {doc.s3Key.split("/").pop()}
-                            </p>
-                            {/* Date visible on mobile, hidden on medium+ */}
-                            <p className="text-gray-500 md:hidden">
-                              {new Date(doc.uploadedAt).toLocaleDateString()}
-                            </p>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 hidden md:table-cell">
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusBadge status={doc.status} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end items-center space-x-2">
+                            <a
+                              href={doc.s3Url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md text-xs"
+                            >
+                              View
+                            </a>
+                            <button
+                              onClick={() => handleActionClick(doc, "rejected")}
+                              disabled={doc.status !== "pending"}
+                              className="px-3 py-1.5 font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => handleActionClick(doc, "verified")}
+                              disabled={doc.status !== "pending"}
+                              className="px-3 py-1.5 font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Approve
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 hidden md:table-cell">
-                        {new Date(doc.uploadedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge status={doc.status} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end items-center space-x-2">
-                          <a
-                            href={doc.s3Url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md text-xs"
-                          >
-                            View
-                          </a>
-                          <button
-                            onClick={() => handleActionClick(doc, "rejected")}
-                            disabled={doc.status !== "pending"}
-                            className="px-3 py-1.5 font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md text-xs"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => handleActionClick(doc, "verified")}
-                            disabled={doc.status === "verified"}
-                            className="px-3 py-1.5 font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-md text-xs"
-                          >
-                            Approve
-                          </button>
-                        </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="text-center py-16 text-gray-500"
+                      >
+                        No documents uploaded.
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="text-center py-16 text-gray-500">
-                      No documents uploaded.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 }

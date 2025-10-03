@@ -7,15 +7,29 @@ const {
   updateDocumentById,
 } = require("../models/documentModel");
 
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 exports.registerAdmin = async (req, res) => {
   try {
-    const data = req.body;
+    // Get UID and email securely from the decoded token (from middleware)
+    const userId = req.user.uid;
+    const email = req.user.email; // Get the rest of the profile data from the form body
 
-    await createAdmin({
-      ...data,
-      userID: data.userID,
+    const { name, prn, collegeName, collegeId, additionalInfo } = req.body; // Construct the data payload, ensuring email and userID are from the server
+
+    const adminProfile = {
+      userID: userId,
+      email: email,
+      name,
+      prn,
+      collegeName,
+      collegeId,
+      additionalInfo: additionalInfo || "",
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    await createAdmin(adminProfile);
 
     res.status(201).json({ message: "✅ Admin registered successfully" });
   } catch (error) {
@@ -153,5 +167,72 @@ exports.adminUpdateDocumentStatus = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to update status", error: error.message });
+  }
+};
+
+exports.sendStudentStatusEmail = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Fetch student and document details
+    const student = await getStudentById(studentId);
+    const documents = await getDocumentsByUserId(studentId);
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    // Compose the email content (HTML)
+    const subject = "Update on Your Document Verification";
+    const documentListHtml = documents
+      .map(
+        (doc) => `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">${doc.s3Key
+            .split("/")
+            .pop()}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-transform: capitalize;">${
+            doc.status
+          }</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">${
+            doc.remark || ""
+          }</td>
+        </tr>`
+      )
+      .join("");
+
+    const htmlBody = `
+      <h1>Document Status Update</h1>
+      <p>Hello ${student.name.split(" ")[0]},</p>
+      <p>Here is the current status of your uploaded documents:</p>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">File Name</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Status</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Admin Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${documentListHtml}
+        </tbody>
+      </table>
+      <p>If any documents are rejected, please delete them and upload a corrected version.</p>
+      <p>Thank you.</p>
+      <p>Note: This is an auto-generated email. Please do not reply.</p>
+    `;
+
+    // ✅ 3. Send the email using Resend
+    await resend.emails.send({
+      from: "DocVerify System <onboarding@resend.dev>", // Use this for testing
+      to: student.email,
+      subject: subject,
+      html: htmlBody,
+    });
+
+    res.status(200).json({ message: "Email sent successfully." });
+  } catch (error) {
+    console.error("❌ Error sending status email:", error);
+    res.status(500).json({ message: "Failed to send email." });
   }
 };
