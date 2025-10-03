@@ -270,11 +270,21 @@ export default function StudentDashboard({ token, userID }) {
                   <tbody className="divide-y divide-slate-200">
                     {documents.map((doc) => (
                       <tr key={doc.document_id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 flex items-center gap-3">
-                          <Icon type={doc.s3Key} />
-                          <span className="font-medium text-slate-800">
-                            {doc.s3Key.split("/").pop()}
-                          </span>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <Icon type={doc.s3Key} />
+                            <div>
+                              <span className="font-medium text-slate-800">
+                                {doc.s3Key.split("/").pop()}
+                              </span>
+                              {/* ✅ CHANGE 1: Show remark for rejected documents */}
+                              {doc.status === "rejected" && doc.remark && (
+                                <p className="text-xs text-red-600 mt-1 italic">
+                                  Reason: {doc.remark}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-slate-500">
                           {new Date(doc.uploadedAt).toLocaleDateString()}
@@ -321,6 +331,7 @@ export default function StudentDashboard({ token, userID }) {
                             onClick={() =>
                               handleDeleteDocument(doc.document_id)
                             }
+                            disabled={doc.status === "verified"}
                             className="text-red-600 hover:text-red-800 relative group"
                             title="Delete Document"
                           >

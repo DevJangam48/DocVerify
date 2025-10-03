@@ -6,6 +6,7 @@ const {
   getStudentsForCollege,
   getDocumentsOfStudent,
   getStudentByIdController,
+  adminUpdateDocumentStatus,
 } = require("../controllers/adminController");
 const { verifyFirebaseToken } = require("../middleware/authMiddleware");
 const { verifyAdmin } = require("../middleware/authMiddleware");
@@ -32,6 +33,13 @@ router.get(
   verifyFirebaseToken,
   verifyAdmin,
   getDocumentsOfStudent
+);
+
+router.put(
+  "/documents/:documentId/status",
+  verifyFirebaseToken,
+  verifyAdmin,
+  adminUpdateDocumentStatus
 );
 
 module.exports = router;

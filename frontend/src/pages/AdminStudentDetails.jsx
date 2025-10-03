@@ -102,7 +102,7 @@ const ActionModal = ({ doc, action, onClose, onConfirm }) => {
   if (!doc) return null;
 
   const [remarks, setRemarks] = useState("");
-  const isReject = action === "reject";
+  const isReject = action === "rejected";
   const title = isReject ? "Reject Document" : "Approve Document";
   const buttonClass = isReject
     ? "bg-red-600 hover:bg-red-700"
@@ -214,15 +214,30 @@ export default function AdminStudentDetails({ token }) {
   const handleModalClose = () =>
     setModalState({ isOpen: false, doc: null, action: "" });
 
-  const handleConfirmAction = async (documentId, status, remarks) => {
-    console.log(
-      `Updating doc ${documentId} to ${status} with remarks: ${remarks}`
-    );
-    // Here you would make your API call
-    setDocuments((docs) =>
-      docs.map((d) => (d.document_id === documentId ? { ...d, status } : d))
-    );
-    handleModalClose();
+  const handleConfirmAction = async (documentId, status, remark) => {
+    try {
+      // Call the backend endpoint to update the status
+      await api.put(`/admins/documents/${documentId}/status`, {
+        status,
+        remark,
+      });
+
+      // If the API call is successful, then update the local state
+      setDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.document_id === documentId
+            ? { ...doc, status: status, remark: remark } // Also update remark if you want to display it
+            : doc
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update document status:", err);
+      // Optionally, show an error message to the admin
+      setError("Failed to save status change. Please try again.");
+    } finally {
+      // Close the modal regardless of success or failure
+      handleModalClose();
+    }
   };
 
   if (loading)
@@ -334,13 +349,15 @@ export default function AdminStudentDetails({ token }) {
                             View
                           </a>
                           <button
-                            onClick={() => handleActionClick(doc, "reject")}
+                            onClick={() => handleActionClick(doc, "rejected")}
+                            disabled={doc.status !== "pending"}
                             className="px-3 py-1.5 font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md text-xs"
                           >
                             Reject
                           </button>
                           <button
                             onClick={() => handleActionClick(doc, "verified")}
+                            disabled={doc.status === "verified"}
                             className="px-3 py-1.5 font-semibold text-green-600 bg-green-50 hover:bg-green-100 rounded-md text-xs"
                           >
                             Approve

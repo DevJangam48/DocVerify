@@ -3,6 +3,8 @@ const { getStudentById } = require("../models/studentModel");
 const {
   getDocumentsByUserId,
   getDocumentsByCollegeId,
+  getDocumentById,
+  updateDocumentById,
 } = require("../models/documentModel");
 
 exports.registerAdmin = async (req, res) => {
@@ -100,5 +102,56 @@ exports.getStudentByIdController = async (req, res) => {
   } catch (error) {
     console.error("Error fetching student:", error);
     res.status(500).json({ error: "Error fetching student details" });
+  }
+};
+
+// Controller for approving/rejecting document
+exports.adminUpdateDocumentStatus = async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const { status, remark } = req.body;
+
+    // This comes from your verifyAdmin middleware
+    const adminCollegeId = req.user.collegeId;
+
+    // 1. Basic status validation
+    if (!["verified", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    // 2. Fetch the document first to check permissions
+    const documentToUpdate = await getDocumentById(documentId);
+    console.log("Admin's college ID:", adminCollegeId);
+    console.log("Document to update:", documentToUpdate);
+    if (!documentToUpdate) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    // 3. 🔐 SECURITY CHECK: Ensure the admin and document belong to the same college
+    if (documentToUpdate.collegeId !== adminCollegeId) {
+      return res.status(403).json({
+        message: "Forbidden: You are not authorized to modify this document.",
+      });
+    }
+
+    // 4. If the check passes, proceed with the update
+    const updatePayload = {
+      status,
+      remark: remark || "",
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: req.user.uid, // Good practice to log which admin reviewed it
+    };
+
+    const updatedDocument = await updateDocumentById(documentId, updatePayload);
+
+    res.status(200).json({
+      message: "Status updated successfully",
+      document: updatedDocument,
+    });
+  } catch (error) {
+    console.error("❌ Error updating document status:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update status", error: error.message });
   }
 };
