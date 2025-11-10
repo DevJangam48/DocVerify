@@ -197,9 +197,15 @@ export default function AdminDashboard({ token, adminID }) {
 
                   {/* Status */}
                   <div className="text-right">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800">
-                      Pending Review
-                    </span>
+                    {student.hasPending ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800">
+                        Pending Review
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                        All Verified
+                      </span>
+                    )}
                   </div>
                 </div>
               ))

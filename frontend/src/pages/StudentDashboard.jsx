@@ -77,7 +77,16 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+const getCleanFilename = (s3Key) => {
+  const fullFilename = s3Key.split("/").pop();
 
+  const underscoreIndex = fullFilename.indexOf("_");
+  if (underscoreIndex <= 0) {
+    return fullFilename;
+  }
+
+  return fullFilename.substring(underscoreIndex + 1);
+};
 export default function StudentDashboard({ token, userID }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
@@ -206,6 +215,18 @@ export default function StudentDashboard({ token, userID }) {
                   <span className="text-slate-500">College:</span>{" "}
                   {profile.collegeName}
                 </p>
+                <p>
+                  <span className="text-slate-500 text-xs font-medium">
+                    Phone:
+                  </span>{" "}
+                  {profile.phone}
+                </p>
+                <p>
+                  <span className="text-slate-500 text-xs font-medium">
+                    Address:
+                  </span>{" "}
+                  {profile.currentAddress}
+                </p>
               </div>
             </div>
 
@@ -275,7 +296,7 @@ export default function StudentDashboard({ token, userID }) {
                             <Icon type={doc.s3Key} />
                             <div>
                               <span className="font-medium text-slate-800">
-                                {doc.s3Key.split("/").pop()}
+                                {getCleanFilename(doc.s3Key)}
                               </span>
                               {/* ✅ CHANGE 1: Show remark for rejected documents */}
                               {doc.status === "rejected" && doc.remark && (

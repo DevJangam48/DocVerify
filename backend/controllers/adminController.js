@@ -64,8 +64,12 @@ exports.getStudentsForCollege = async (req, res) => {
     const studentMap = documents.reduce((acc, doc) => {
       const studentId = doc.userId || doc.uploaderPRN;
       if (studentId) {
-        if (!acc[studentId]) acc[studentId] = { studentId, documentCount: 1 };
+        if (!acc[studentId])
+          acc[studentId] = { studentId, documentCount: 0, hasPending: false };
         acc[studentId].documentCount++;
+        if (doc.status === "pending") {
+          acc[studentId].hasPending = true;
+        }
       }
       return acc;
     }, {});
@@ -80,6 +84,7 @@ exports.getStudentsForCollege = async (req, res) => {
           email: studentDetails?.email || "Unknown",
           prnNo: studentDetails?.prn || "Unknown",
           documentCount: studentMap[studentId].documentCount,
+          hasPending: studentMap[studentId].hasPending,
         };
       })
     );
@@ -135,8 +140,6 @@ exports.adminUpdateDocumentStatus = async (req, res) => {
 
     // 2. Fetch the document first to check permissions
     const documentToUpdate = await getDocumentById(documentId);
-    console.log("Admin's college ID:", adminCollegeId);
-    console.log("Document to update:", documentToUpdate);
     if (!documentToUpdate) {
       return res.status(404).json({ message: "Document not found" });
     }
@@ -170,59 +173,94 @@ exports.adminUpdateDocumentStatus = async (req, res) => {
   }
 };
 
+const getCleanFilename = (s3Key) => {
+  const fullFilename = s3Key.split("/").pop();
+  const underscoreIndex = fullFilename.indexOf("_");
+  if (underscoreIndex <= 0) {
+    return fullFilename;
+  }
+  return fullFilename.substring(underscoreIndex + 1);
+};
+
 exports.sendStudentStatusEmail = async (req, res) => {
   try {
     const { studentId } = req.params;
-
-    // Fetch student and document details
     const student = await getStudentById(studentId);
     const documents = await getDocumentsByUserId(studentId);
 
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
-
-    // Compose the email content (HTML)
     const subject = "Update on Your Document Verification";
+
     const documentListHtml = documents
       .map(
         (doc) => `
         <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;">${doc.s3Key
-            .split("/")
-            .pop()}</td>
-          <td style="padding: 8px; border: 1px solid #ddd; text-transform: capitalize;">${
+          <td style="padding: 10px; border: 1px solid #eee;">${getCleanFilename(
+            doc.s3Key
+          )}</td>
+          <td style="padding: 10px; border: 1px solid #eee; text-transform: capitalize;">${
             doc.status
           }</td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${
+          <td style="padding: 10px; border: 1px solid #eee;">${
             doc.remark || ""
           }</td>
         </tr>`
       )
       .join("");
 
-    const htmlBody = `
-      <h1>Document Status Update</h1>
-      <p>Hello ${student.name.split(" ")[0]},</p>
-      <p>Here is the current status of your uploaded documents:</p>
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr>
-            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">File Name</th>
-            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Status</th>
-            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Admin Remarks</th>
-          </tr>
-        </thead>
+    const studentDetailsHtml = `
+      <h2 style="color: #333;">Your Profile Details</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px;">
         <tbody>
-          ${documentListHtml}
+          <tr>
+            <td style="padding: 10px; border: 1px solid #eee; background-color: #f9f9f9; width: 30%;"><strong>Student Name</strong></td>
+            <td style="padding: 10px; border: 1px solid #eee;">${student.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #eee; background-color: #f9f9f9; width: 30%;"><strong>PRN</strong></td>
+            <td style="padding: 10px; border: 1px solid #eee;">${student.prn}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #eee; background-color: #f9f9f9; width: 30%;"><strong>Email</strong></td>
+            <td style="padding: 10px; border: 1px solid #eee;">${student.email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #eee; background-color: #f9f9f9; width: 30%;"><strong>College</strong></td>
+            <td style="padding: 10px; border: 1px solid #eee;">${student.collegeName}</td>
+          </tr>
         </tbody>
       </table>
-      <p>If any documents are rejected, please delete them and upload a corrected version.</p>
-      <p>Thank you.</p>
-      <p>Note: This is an auto-generated email. Please do not reply.</p>
     `;
 
-    // ✅ 3. Send the email using Resend
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h1 style="color: #4A5568;">Document Status Update</h1>
+        <p>Hello ${student.name.split(" ")[0]},</p>
+        <p>Your profile and document verification status has been updated by your college admin.</p>
+        
+        ${studentDetailsHtml}
+
+        <h2 style="color: #333;">Document Status</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead>
+            <tr style="background-color: #f9f9f9;">
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">File Name</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Status</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Admin Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${documentListHtml}
+          </tbody>
+        </table>
+        <p style="margin-top: 20px;">If any documents are rejected, please delete them from your dashboard and upload a corrected version.</p>
+        <p>Thank you.</p>
+        <p style="font-size: 12px; color: #777;">Note: This is an auto-generated email. Please do not reply.</p>
+      </div>
+    `;
+
     await resend.emails.send({
       from: "DocVerify System <onboarding@resend.dev>", // Use this for testing
       to: student.email,

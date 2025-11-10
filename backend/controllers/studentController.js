@@ -6,7 +6,8 @@ exports.registerStudent = async (req, res) => {
     const userId = req.user.uid;
     const email = req.user.email; // Get other details from the form body
 
-    const { name, prn, collegeName, collegeId } = req.body; // Construct the data payload securely
+    const { name, prn, phone, collegeName, collegeId, currentAddress } =
+      req.body; // Construct the data payload securely
 
     const studentProfile = {
       userID: userId,
@@ -15,6 +16,8 @@ exports.registerStudent = async (req, res) => {
       prn,
       collegeName,
       collegeId,
+      phone,
+      currentAddress,
       createdAt: new Date().toISOString(),
     };
 
