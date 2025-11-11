@@ -5,5 +5,5 @@
 *.key
 *.json
 config/serviceAccountKey.json
-config/*.json
+
 
