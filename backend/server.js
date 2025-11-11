@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("./middleware/cors");
 const app = express();
-require("dotenv").config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 const studentRoutes = require("./routes/studentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
