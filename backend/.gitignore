@@ -3,7 +3,7 @@
 .env
 *.pem
 *.key
-*.json
+/node_modules
 config/serviceAccountKey.json
 
 
