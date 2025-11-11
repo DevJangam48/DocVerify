@@ -8,7 +8,7 @@ import {
 
 import Signup from "./pages/login_signup/Signup";
 import Login from "./pages/login_signup/Login";
-import AdminLogin from "./pages/login_signup/AdminLogin";
+import AdminLogin from "./pages/login_signup/AdminLogin.jsx";
 import AdminSignup from "./pages/login_signup/adminSignup";
 import LandingPage from "./pages/LandingPage";
 import StudentDashboard from "./pages/StudentDashboard";
