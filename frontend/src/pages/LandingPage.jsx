@@ -35,7 +35,7 @@ export default function LandingPage({ setToken, setUserID, setAdminID }) {
               className="h-10 w-10"
             />
             <span className="text-2xl text-slate-900 font-bold tracking-widest">
-              DocuVerify
+              DocVerify
               <span className="font-normal text-indigo-500">.edu</span>
             </span>
           </div>
